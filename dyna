@@ -1,0 +1,32 @@
+CREATE TABLE CachedSiteIDsForDynamicServices (
+    DynamicServiceID INT,
+    SiteID INT,
+    CacheTimestamp DATETIME NOT NULL DEFAULT GETDATE(),
+    PRIMARY KEY (DynamicServiceID, SiteID)
+);
+
+--populate 
+-- Handle the NULL case first, if applicable
+INSERT INTO CachedDynamicServiceSiteIDs (DynamicServiceListID, SiteID)
+SELECT NULL, SiteID 
+FROM dbo.fn_Clinic_Search_Get_Site_IDs_With_Dynamic_Services(NULL);
+
+-- Now, handle the non-NULL cases
+DECLARE @DynamicServiceListID INT = 1; -- Starting point
+
+WHILE @DynamicServiceListID <= 201 -- Assuming 201 is the maximum DynamicServiceListID
+BEGIN
+    DELETE FROM CachedDynamicServiceSiteIDs WHERE DynamicServiceListID = @DynamicServiceListID;
+    
+    INSERT INTO CachedDynamicServiceSiteIDs (DynamicServiceListID, SiteID)
+    SELECT @DynamicServiceListID, SiteID 
+    FROM dbo.fn_Clinic_Search_Get_Site_IDs_With_Dynamic_Services(CONVERT(VARCHAR, @DynamicServiceListID));
+    
+    SET @DynamicServiceListID = @DynamicServiceListID + 1;
+END
+
+ 
+  ----
+  SELECT SiteID 
+FROM CachedSiteIDsForDynamicServices 
+WHERE DynamicServiceID = @YourDesiredDynamicServiceID;
